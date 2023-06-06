@@ -10,7 +10,6 @@ def menu():
     print('7 - Lucro Total da Carteira')
 
 
-
 while True:
 
     menu()
