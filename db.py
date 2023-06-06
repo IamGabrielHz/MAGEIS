@@ -213,7 +213,6 @@ def detalhamento():
     cur.close()
 
 
-
 def rec_date():
     data_str = input("Digite a data no formato dd/mm/aaaa: ")
     data = datetime.strptime(data_str, "%d/%m/%Y")

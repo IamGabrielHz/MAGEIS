@@ -4,9 +4,11 @@ def menu():
     print('\n1 - Cadastrar')
     print('2 - Editar Transação')
     print('3 - Excluir Transação')
-    print('4 - Detalhamento')
-    print('5 - Historico de Transações')
+    print('4 - Historico de Transações')
+    print('5 - Detalhar por Ativo')
     print('6 - Lucro por Ativo')
+    print('7 - Lucro Total da Carteira')
+
 
 
 while True:
@@ -22,10 +24,12 @@ while True:
     elif op == '3':
         db.excluir_transacao()
     elif op == '4':
-        db.detalhamento()
-    elif op == '5':
         db.mostrar_historico()
+    elif op == '5':
+        db.detalhamento()
     elif op == '6':
         db.lc_ativo()
+    elif op == '7':
+        db.lc_carteira()
     else:
         print('Opção Inválida. Tente Novamente!')
