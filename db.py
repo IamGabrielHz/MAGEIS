@@ -139,10 +139,10 @@ class investimentos:
                 port="5432"
         ) 
         cur = conn.cursor()
-        cur.execute("SELECT preco_medio FROM investimentos WHERE data = (SELECT MAX(data) FROM investimentos WHERE tipo_transacao = 'C')")
+        cur.execute("SELECT preco_medio FROM investimentos WHERE data = (SELECT MAX(data) FROM investimentos WHERE tipo_transacao = 'C' and ativo = %s)", (self.__ativo,))
         pm = cur.fetchone()[0]
         print(pm)
-        l_c = ((self.__valor_unit - pm) * self.quantidade) - (self.__taxa_corretagem + self.__b3)
+        l_c = round(((self.__valor_unit - pm) * self.quantidade) - (self.__taxa_corretagem + self.__b3),2)
         if l_c > 0: 
             rest = 'LUCRO'
         else:
@@ -163,9 +163,8 @@ def lc_ativo():
             port="5432"
         )
     cur = conn.cursor()
-    ativo = input('Insira o nome do ativo: ')
-    cur.execute('SELECT total_lc FROM investimentos WHERE ativo = %s', (ativo))
-    conn.commit()
+    ativo = input('Insira o nome do ativo: ').upper()
+    cur.execute('SELECT SUM(total_lc) as LucroTotal FROM investimentos WHERE ativo = %s', (ativo,))
     res = cur.fetchall()
     for row in res:
         print(row)
@@ -182,7 +181,7 @@ def lc_carteira():
             port="5432"
         ) 
     cur = conn.cursor()
-    cur.execute('SELECT SUM(total_lc) as total_lucro FROM investimentos')
+    cur.execute('SELECT SUM(total_lc) as LucroTotal FROM investimentos')
     conn.commit()
     res = cur.fetchall()
     print(res)
@@ -257,12 +256,13 @@ def editar_transacao():
     if transaction:
         
         print("\nDetalhes da transação:")
-        print("Código:", transaction[0])
-        print("Ativo:", transaction[1])
-        print("Quantidade:", transaction[2])
-        print("Valor Unitário:", transaction[3])
-        print("Taxa de Corretagem:", transaction[4])
-        print("Tipo de Transação:", transaction[5])
+        print("Data:", transaction[0])
+        print("Código:", transaction[1])
+        print("Ativo:", transaction[2])
+        print("Quantidade:", transaction[3])
+        print("Valor Unitário:", transaction[4])
+        print("Taxa de Corretagem:", transaction[5])
+        print("Tipo de Transação:", transaction[6])
 
         
         quantidade = int(input('Insira a nova quantidade: '))
@@ -279,27 +279,43 @@ def editar_transacao():
 
        
         inv = investimentos(
-            ativo=transaction[1],
+            data=transaction[0],
+            ativo=transaction[2],
             quantidade=quantidade,
             valor_unit=valor_unit,
             taxa_corretagem=taxa_corretagem,
             tipo_transacao=transaction[5],
-)
-        inv.calc()
-        inv.precoMedio()
-        inv.lucro_prejuizo()
-        inv.atualizarDados()
-        
-        cur.execute("""
-            UPDATE investimentos
-            SET valor_operacao = %s, b3 = %s, valor_total = %s, preco_medio = %s, resultado = %s, total_lc = %s
-            WHERE codigo = %s
-        """, (
-            inv.valor_operacao, inv.b3, inv.valor_total,
-            inv.preco_medio, inv.resultado, inv.total_lc,
-            codigo
-        ))
-        conn.commit()
+        )
+        if inv.tipo_transacao == 'C':
+            inv.compra()
+            inv.precoMedio()
+            inv.atualizarDados()
+            cur.execute("""
+                UPDATE investimentos
+                SET valor_operacao = %s, b3 = %s, valor_total = %s, preco_medio = %s, resultado = %s, total_lc = %s
+                WHERE codigo = %s
+            """, (
+                inv.valor_operacao, inv.b3, inv.valor_total,
+                inv.preco_medio, inv.resultado, inv.total_lc,
+                codigo
+            ))
+            conn.commit()
+
+        elif inv.tipo_transacao == 'V':
+            inv.venda()
+            inv.lucro_prejuizo()
+            inv.atualizarDados()
+            
+            cur.execute("""
+                UPDATE investimentos
+                SET valor_operacao = %s, b3 = %s, valor_total = %s, preco_medio = %s, resultado = %s, total_lc = %s
+                WHERE codigo = %s
+            """, (
+                inv.valor_operacao, inv.b3, inv.valor_total,
+                inv.preco_medio, inv.resultado, inv.total_lc,
+                codigo
+            ))
+            conn.commit()
 
 
         print("Transação atualizada com sucesso.")
@@ -350,47 +366,25 @@ def excluir_transacao():
             transaction = transactions[choice - 1]
 
             print("Detalhes da transação selecionada:")
-            print("Código:", transaction[0])
-            print("Ativo:", transaction[1])
-            print("Quantidade:", transaction[2])
-            print("Valor Unitário:", transaction[3])
-            print("Taxa de Corretagem:", transaction[4])
-            print("Tipo de Transação:", transaction[5])
+            print("Data:", transaction[0])
+            print("Código:", transaction[1])
+            print("Ativo:", transaction[2])
+            print("Quantidade:", transaction[3])
+            print("Valor Unitário:", transaction[4])
+            print("Taxa de Corretagem:", transaction[5])
+            print("Tipo de Transação:", transaction[6])
 
             
             confirm = input("Tem certeza que deseja excluir esta transação? (S/N): ")
             if confirm.upper() == "S":
                 
-                cur.execute("DELETE FROM investimentos WHERE codigo = %s", (transaction[0],))
+                cur.execute("DELETE FROM investimentos WHERE codigo = %s", (transaction[1],))
                 conn.commit()
                 print("Transação excluída com sucesso.")
             else:
                 print("Operação de exclusão cancelada.")
     else:
         print("Nenhuma transação encontrada com o código", codigo)
-
-    conn.close()
-    cur.close()
-
-def listar_ativos():
-    conn = psycopg2.connect(
-        database="yynfswhx",
-        user="yynfswhx",
-        password="fkDkWLY0e2WVbNOtBN4HPMktb94_sK0X",
-        host="silly.db.elephantsql.com",
-        port="5432"
-    )
-    cur = conn.cursor()
-
-    cur.execute("SELECT DISTINCT ativo FROM investimentos")
-    ativos = cur.fetchall()
-
-    if ativos:
-        print("Ativos disponíveis:")
-        for ativo in ativos:
-            print(ativo[0])
-    else:
-        print("Nenhum ativo encontrado.")
 
     conn.close()
     cur.close()
