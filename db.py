@@ -120,9 +120,20 @@ class investimentos:
             port="5432"
         ) 
         cur = conn.cursor()
-        preco_medio = round(self.valor_total / self.quantidade, 2)
-        cur.execute("UPDATE investimentos SET preco_medio = %s WHERE codigo = %s", (preco_medio, self.__codigo))
-        conn.commit()
+        cur.execute('SELECT ativo, COUNT(*) as aparições from investimentos where ativo = %s GROUP BY ativo', (self.__ativo,))
+        res_1 = cur.fetchone()
+        if res_1 [0][1] is None:
+            preco_medio = round(self.valor_total / self.quantidade, 2)
+            cur.execute("UPDATE investimentos SET preco_medio = %s WHERE codigo = %s", (preco_medio, self.__codigo))
+            conn.commit()
+        elif res_1 [0][1] is not None:
+            cur.execute('SELECT SUM(valor_total),(SELECT SUM(quantidade)FROM investimentos where ativo = %s) - (SELECT SUM(quantidade) FROM investimentos where ativo = %s) FROM investimentos where ativo = %s', (self.__ativo,self.__ativo,self.__ativo))
+            res_2 = cur.fetchone()
+            vt = res_2[0]
+            qtd = res_2[1]
+            preco_medio = round(vt/qtd, 2)
+            cur.execute("UPDATE investimentos SET preco_medio = %s WHERE codigo = %s", (preco_medio, self.__codigo))
+            conn.commit()
         conn.close()    
         cur.close()
 
