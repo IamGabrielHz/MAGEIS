@@ -121,17 +121,19 @@ class investimentos:
         ) 
         cur = conn.cursor()
         cur.execute('SELECT ativo, COUNT(*) as aparições from investimentos where ativo = %s GROUP BY ativo', (self.__ativo,))
-        res_1 = cur.fetchone()
-        if res_1 [0][1] is None:
+        res = cur.fetchone()
+        ap = res[1]
+        if ap == 1:
             preco_medio = round(self.valor_total / self.quantidade, 2)
             cur.execute("UPDATE investimentos SET preco_medio = %s WHERE codigo = %s", (preco_medio, self.__codigo))
             conn.commit()
-        elif res_1 [0][1] is not None:
-            cur.execute('SELECT SUM(valor_total),(SELECT SUM(quantidade)FROM investimentos where ativo = %s) - (SELECT SUM(quantidade) FROM investimentos where ativo = %s) FROM investimentos where ativo = %s', (self.__ativo,self.__ativo,self.__ativo))
+        elif ap > 1:
+            cur.execute("SELECT (SELECT SUM(valor_total) FROM investimentos where ativo = %s and tipo_transacao = 'C'),(SELECT SUM(quantidade)FROM investimentos where ativo = %s and tipo_transacao = 'C'),(SELECT SUM(quantidade) FROM investimentos where ativo = %s and tipo_transacao = 'V') FROM investimentos where ativo = %s", (self.__ativo, self.__ativo,self.__ativo,self.__ativo))
             res_2 = cur.fetchone()
             vt = res_2[0]
-            qtd = res_2[1]
-            preco_medio = round(vt/qtd, 2)
+            qtd_c = res_2[1] if res_2[1] is not None else 0
+            qtd_v = res_2[2] if res_2[2] is not None else 0
+            preco_medio = round(vt/(qtd_c-qtd_v), 2)
             cur.execute("UPDATE investimentos SET preco_medio = %s WHERE codigo = %s", (preco_medio, self.__codigo))
             conn.commit()
         conn.close()    
