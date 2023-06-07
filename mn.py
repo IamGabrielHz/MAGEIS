@@ -8,6 +8,8 @@ def menu():
     print('5 - Detalhar por Ativo')
     print('6 - Lucro por Ativo')
     print('7 - Lucro Total da Carteira')
+    print('8 - Reiniciar Banco de Dados')
+    print('0 - Sair')
 
 
 while True:
@@ -30,5 +32,10 @@ while True:
         db.lc_ativo()
     elif op == '7':
         db.lc_carteira()
+    elif op == '8':
+        db.reiniciar()
+    elif op == '0':
+        print('Volte logo!')
+        break
     else:
         print('Opção Inválida. Tente Novamente!')

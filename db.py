@@ -28,9 +28,6 @@ class investimentos:
     @property
     def codigo(self):
         return self.__codigo
-    @codigo.setter
-    def codigo(self,valor):
-        self.__codigo = valor
     @property
     def ativo(self):
         return self.__ativo
@@ -97,7 +94,7 @@ class investimentos:
         
 
 
-    def atualizarDados(self):     
+    def atualizarDados(self,codigo):     
         conn = psycopg2.connect(
             database="yynfswhx",
             user="yynfswhx",
@@ -108,7 +105,7 @@ class investimentos:
 
         cur = conn.cursor()
 
-        cur.execute('UPDATE investimentos SET data = %s, ativo = %s, quantidade = %s, valor_unit = %s, taxa_corretagem = %s, tipo_transacao = %s, valor_operacao = %s WHERE codigo = %s', (self.__data,self.__ativo,self.__quantidade, self.__valor_unit, self.__taxa_corretagem, self.__tipo_transacao, self.__valor_operacao,self.__codigo))
+        cur.execute('UPDATE investimentos SET data = %s, ativo = %s, quantidade = %s, valor_unit = %s, taxa_corretagem = %s, tipo_transacao = %s, valor_operacao = %s WHERE codigo = %s', (self.__data,self.__ativo,self.__quantidade, self.__valor_unit, self.__taxa_corretagem, self.__tipo_transacao, self.__valor_operacao,codigo))
         conn.commit()
         cur.close()
         conn.close()
@@ -155,9 +152,6 @@ class investimentos:
         conn.close()
         cur.close()
 
-
-    def change_cod(self,valor):
-        self.codigo = valor
 
 
 def lc_ativo():
@@ -303,7 +297,6 @@ def editar_transacao():
     quantidade = int(input('Insira a nova quantidade: '))
     valor_unitario = float(input('Insira o novo valor unitário: '))
     taxa_corretagem = float(input('Insira a nova taxa de corretagem: '))
-    tipo = input('Insira o novo tipo de transação: ').upper()[0]
 
     inv = investimentos(
         data=data,
@@ -311,24 +304,14 @@ def editar_transacao():
         quantidade=quantidade,
         valor_unit=valor_unitario,
         taxa_corretagem=taxa_corretagem,
-        tipo_transacao=tipo,
+        tipo_transacao= 'C',
     )
-    inv.codigo = codigo
-    # Atualizar os valores no banco de dados
-    if inv.tipo_transacao == 'C':
-        inv.compra()
-        inv.atualizarDados()
-        inv.precoMedio()
 
-
-    elif inv.tipo_transacao == 'V':
-        inv.venda()
-        inv.lucro_prejuizo()
-        inv.atualizarDados()
-
-
-
-    print("Transação atualizada com sucesso!")
+    inv.compra()
+    inv.atualizarDados(codigo)
+    inv.precoMedio()
+    
+    print("\nTransação atualizada com sucesso!")
 
     conn.close()
     cur.close()
@@ -392,7 +375,23 @@ def mostrar_historico():
 
         print(tabulate(tabela_transacoes, headers=headers, tablefmt="fancy_grid"))
     else:
-        print("Nenhuma transação encontrada.")
+        print("\nNenhuma transação encontrada.")
 
+    conn.close()
+    cur.close()
+
+
+
+def reiniciar():
+    conn = psycopg2.connect(
+        database="yynfswhx",
+        user="yynfswhx",
+        password="fkDkWLY0e2WVbNOtBN4HPMktb94_sK0X",
+        host="silly.db.elephantsql.com",
+        port="5432"
+    )
+    cur = conn.cursor()
+    cur.execute('DELETE from investimentos')
+    conn.commit()
     conn.close()
     cur.close()
