@@ -128,12 +128,13 @@ class investimentos:
             cur.execute("UPDATE investimentos SET preco_medio = %s WHERE codigo = %s", (preco_medio, self.__codigo))
             conn.commit()
         elif ap > 1:
-            cur.execute("SELECT (SELECT SUM(valor_total) FROM investimentos where ativo = %s and tipo_transacao = 'C'),(SELECT SUM(quantidade)FROM investimentos where ativo = %s and tipo_transacao = 'C'),(SELECT SUM(quantidade) FROM investimentos where ativo = %s and tipo_transacao = 'V') FROM investimentos where ativo = %s", (self.__ativo, self.__ativo,self.__ativo,self.__ativo))
-            res_2 = cur.fetchone()
-            vt = res_2[0]
-            qtd_c = res_2[1] if res_2[1] is not None else 0
-            qtd_v = res_2[2] if res_2[2] is not None else 0
-            preco_medio = round(vt/(qtd_c-qtd_v), 2)
+            cur.execute("SELECT (SELECT SUM(valor_total) FROM investimentos where ativo = %s and tipo_transacao = 'C'),(SELECT SUM(valor_total) FROM investimentos where ativo = %s and tipo_transacao = 'V'),(SELECT SUM(quantidade)FROM investimentos where ativo = %s and tipo_transacao = 'C'),(SELECT SUM(quantidade) FROM investimentos where ativo = %s and tipo_transacao = 'V') FROM investimentos where ativo = %s", (self.__ativo,self.__ativo, self.__ativo,self.__ativo,self.__ativo))
+            ret = cur.fetchone()
+            vtc = ret[0]
+            vtv = ret[1] if ret[1] is not None else 0
+            qtd_c = ret[2] if ret[2] is not None else 0
+            qtd_v = ret[3] if ret[3] is not None else 0
+            preco_medio = round((vtc - vtv)/(qtd_c-qtd_v), 2)
             cur.execute("UPDATE investimentos SET preco_medio = %s WHERE codigo = %s", (preco_medio, self.__codigo))
             conn.commit()
         conn.close()    
