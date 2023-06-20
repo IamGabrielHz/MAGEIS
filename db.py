@@ -166,6 +166,29 @@ class investimentos:
         conn.close()
         cur.close()
 
+    
+
+    def editpm(self):
+        conn = psycopg2.connect(
+            database="yynfswhx",
+            user="yynfswhx",
+            password="fkDkWLY0e2WVbNOtBN4HPMktb94_sK0X",
+            host="silly.db.elephantsql.com",
+            port="5432"
+        ) 
+        cur = conn.cursor()
+        cur.execute("SELECT (SELECT SUM(valor_total) FROM investimentos where ativo = %s and tipo_transacao = 'C'),(SELECT SUM(valor_total) FROM investimentos where ativo = %s and tipo_transacao = 'V'),(SELECT SUM(quantidade)FROM investimentos where ativo = %s and tipo_transacao = 'C'),(SELECT SUM(quantidade) FROM investimentos where ativo = %s and tipo_transacao = 'V') FROM investimentos where ativo = %s", (self.__ativo,self.__ativo, self.__ativo,self.__ativo,self.__ativo))
+        ret = cur.fetchone()
+        vtc = ret[0]
+        vtv = ret[1] if ret[1] is not None else 0
+        qtd_c = ret[2] if ret[2] is not None else 0
+        qtd_v = ret[3] if ret[3] is not None else 0
+        preco_medio = round((vtc - vtv)/(qtd_c-qtd_v), 2)
+        cur.execute("UPDATE investimentos SET preco_medio = %s WHERE ativo = %s AND tipo_transacao = 'C' AND data >= %s", (preco_medio, self.__ativo, self.__data))
+        conn.commit()
+        conn.close()    
+        cur.close()
+
 
 
 def lc_ativo():
@@ -233,7 +256,7 @@ def detalhamento():
     )
     cur = conn.cursor()
     ativo = input('Insira o ativo da transação: ').upper()
-    cur.execute("select * from investimentos where ativo = %s", (ativo,))
+    cur.execute("SELECT * FROM investimentos WHERE ativo = %s ORDER BY data", (ativo,))
     res = cur.fetchall()
 
     table_data = [["Data", "Código", "Ativo", "Quantidade", "Valor Unitário", "Taxa de Corretagem", "Tipo de Transação", "Valor Operação", "B3", "Valor Total", "Preço Médio", "Resultado", "Total LC"]]
@@ -277,7 +300,7 @@ def cadastrar_dados():
         [str(inv.data), inv.codigo, inv.ativo, inv.quantidade, inv.valor_unit, inv.taxa_corretagem, inv.tipo_transacao]
     ]
     table = tabulate(table_data, headers="firstrow", tablefmt="fancy_grid")
-    print('Cadastro ralizado com sucesso!')
+    print('\nCadastro ralizado com sucesso!')
     print(table)
 
 
@@ -323,7 +346,7 @@ def editar_transacao():
 
     inv.compra()
     inv.atualizarDados(codigo)
-    inv.precoMedio()
+    inv.editpm()
     
     print("\nTransação atualizada com sucesso!")
 
@@ -359,9 +382,9 @@ def excluir_transacao():
     if confirmacao.lower() == "s":
         cur.execute("DELETE FROM investimentos WHERE codigo = %s", (codigo,))
         conn.commit()
-        print("Transação excluída com sucesso.")
+        print("\nTransação excluída com sucesso.")
     else:
-        print("Exclusão cancelada.")
+        print("\nExclusão cancelada.")
 
         conn.close()
         cur.close()
@@ -377,7 +400,7 @@ def mostrar_historico():
     )
     cur = conn.cursor()
 
-    cur.execute("SELECT * FROM investimentos ORDER BY codigo")
+    cur.execute("SELECT * FROM investimentos ORDER BY data")
     transacoes = cur.fetchall()
 
     if transacoes:
@@ -407,5 +430,6 @@ def reiniciar():
     cur = conn.cursor()
     cur.execute('DELETE from investimentos')
     conn.commit()
+    print('\nBanco de dados reiniciado !')
     conn.close()
     cur.close()
