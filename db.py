@@ -111,6 +111,7 @@ class investimentos:
         conn.close()
 
 
+
     def precoMedio(self):
         conn = psycopg2.connect(
             database="yynfswhx",
@@ -154,7 +155,6 @@ class investimentos:
         cur = conn.cursor()
         cur.execute("SELECT preco_medio FROM investimentos WHERE data = (SELECT MAX(data) FROM investimentos WHERE tipo_transacao = 'C' and ativo = %s)", (self.__ativo,))
         pm = cur.fetchone()[0]
-        print(pm)
         l_c = round(((self.__valor_unit - pm) * self.quantidade) - (self.__taxa_corretagem + self.__b3),2)
         if l_c > 0: 
             rest = 'LUCRO'
